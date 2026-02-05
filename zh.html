@@ -256,6 +256,39 @@
         </div>
       </main>
 
+      <!-- 訂單成功彈出視窗 -->
+      <div
+        id="order-modal"
+        class="fixed inset-0 z-50 hidden items-center justify-center px-4"
+      >
+        <div class="absolute inset-0 bg-black/50"></div>
+        <div
+          class="relative w-full max-w-xs rounded-2xl border border-[#c4a574] bg-[#f5e6d3] p-5 text-center shadow-[0_12px_32px_rgba(0,0,0,0.45)]"
+        >
+          <h2 class="font-menu text-lg font-bold text-[#5c4033]">
+            訂單已送出！
+          </h2>
+          <p class="mt-2 text-sm text-[#5c4033]">
+            您的取餐號碼為：
+            <span
+              id="order-number-display"
+              class="font-menu text-xl font-bold tracking-[0.25em]"
+              style="color: var(--accent-red);"
+            ></span>
+          </p>
+          <p class="mt-2 text-[11px] text-[#8b7355]">
+            請截圖或記下此號碼，至櫃檯報號取餐，謝謝。
+          </p>
+          <button
+            id="order-modal-close"
+            type="button"
+            class="mt-4 w-full rounded-xl bg-[#8b2500] px-4 py-2.5 text-sm font-semibold text-white shadow-lg transition hover:bg-[#a52a2a] active:scale-[0.98]"
+          >
+            好的
+          </button>
+        </div>
+      </div>
+
       <footer class="mt-4 text-center text-xs text-[#8b7355]">
         <p>© <span id="year"></span> GA · 牛肉麵菜單</p>
       </footer>
@@ -282,6 +315,9 @@
 
         const totalEl = document.getElementById("order-total");
         const lineBtn = document.getElementById("line-order-btn");
+        const orderModal = document.getElementById("order-modal");
+        const orderNumberEl = document.getElementById("order-number-display");
+        const orderModalClose = document.getElementById("order-modal-close");
 
         function updateQtyDisplay(id) {
           const span = document.getElementById(`qty-${id}`);
@@ -292,6 +328,45 @@
           const total = items.reduce((sum, item) => sum + quantities[item.id] * item.price, 0);
           if (totalEl) totalEl.textContent = `$${total}`;
           return total;
+        }
+
+        // 產生訂單編號（格式：MMDD-HHMM）
+        function generateOrderId() {
+          const now = new Date();
+          const month = String(now.getMonth() + 1).padStart(2, "0");
+          const day = String(now.getDate()).padStart(2, "0");
+          const hours = String(now.getHours()).padStart(2, "0");
+          const minutes = String(now.getMinutes()).padStart(2, "0");
+          return `${month}${day}-${hours}${minutes}`;
+        }
+
+        function openOrderModal(orderId) {
+          if (orderNumberEl) {
+            orderNumberEl.textContent = orderId;
+          }
+          if (orderModal) {
+            orderModal.classList.remove("hidden");
+            orderModal.classList.add("flex");
+          }
+        }
+
+        function closeOrderModal() {
+          if (orderModal) {
+            orderModal.classList.add("hidden");
+            orderModal.classList.remove("flex");
+          }
+        }
+
+        if (orderModalClose) {
+          orderModalClose.addEventListener("click", closeOrderModal);
+        }
+
+        if (orderModal) {
+          orderModal.addEventListener("click", (event) => {
+            if (event.target === orderModal) {
+              closeOrderModal();
+            }
+          });
         }
 
         items.forEach((item) => {
@@ -323,9 +398,22 @@
               return;
             }
             const total = updateTotal();
-            const parts = selected.map((item) => `${item.label} x${quantities[item.id]}`);
-            const message = `您好，我要訂餐：${parts.join("，")}，總計 ${total} 元`;
-            window.open(`https://line.me/R/msg/text/?${encodeURIComponent(message)}`, "_blank");
+            const orderId = generateOrderId();
+
+            // 格式化訂單文字（多行、乾淨排版）
+            const lines = [];
+            lines.push(`【單號 ${orderId}】`);
+            lines.push("訂購項目：");
+            selected.forEach((item) => {
+              lines.push(`・${item.label} x${quantities[item.id]}`);
+            });
+            lines.push(`總金額：${total} 元`);
+
+            const message = lines.join("\n");
+            const url = `https://line.me/R/msg/text/?${encodeURIComponent(message)}`;
+
+            window.open(url, "_blank");
+            openOrderModal(orderId);
           });
         }
       })();
