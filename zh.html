@@ -1,422 +1,190 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
-  <head>
+<head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>牛肉麵菜單 - GA</title>
-    <meta name="description" content="牛肉麵菜單 - 紅燒、清燉牛肉麵，溫暖好滋味。" />
+    <title>點易 OrderEase - 專業點餐系統</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@600;700&family=Noto+Sans+TC:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet" />
     <style>
-      :root {
-        --wood-dark: #5c4033;
-        --wood-light: #8b5a2b;
-        --parchment: #f5e6d3;
-        --parchment-dark: #e8d4b8;
-        --accent-red: #8b2500;
-        --accent-gold: #b8860b;
-      }
+        :root {
+            --primary-blue: #1a237e;
+            --primary-orange: #ff6d00;
+            --wood-bg: #4a3528;
+            --parchment: #f5e6d3;
+        }
 
-      body {
-        font-family: "Noto Sans TC", sans-serif;
-        background: 
-          url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0L60 30L30 60L0 30z' fill='%234a3528' fill-opacity='0.08'/%3E%3C/svg%3E"),
-          linear-gradient(135deg, #4a3528 0%, #5c4033 25%, #3d2b21 50%, #2d1f18 100%);
-        min-height: 100vh;
-        position: relative;
-      }
+        body {
+            font-family: "Noto Sans TC", sans-serif;
+            background: linear-gradient(135deg, #4a3528 0%, #2d1f18 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding-bottom: 50px;
+        }
 
-      /* 木紋紋理疊加 */
-      body::before {
-        content: "";
-        position: fixed;
-        inset: 0;
-        background: 
-          repeating-linear-gradient(
-            90deg,
-            transparent,
-            transparent 2px,
-            rgba(0,0,0,0.03) 2px,
-            rgba(0,0,0,0.03) 4px
-          ),
-          repeating-linear-gradient(
-            0deg,
-            transparent,
-            transparent 3px,
-            rgba(255,255,255,0.02) 3px,
-            rgba(255,255,255,0.02) 6px
-          );
-        pointer-events: none;
-        z-index: 0;
-      }
+        /* 置頂號碼條 */
+        #sticky-order-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(45, 31, 24, 0.95);
+            color: #f5e6d3;
+            text-align: center;
+            padding: 12px;
+            font-weight: bold;
+            z-index: 9999;
+            border-bottom: 2px solid #ff6d00;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            display: none; /* 預設隱藏 */
+        }
 
-      .font-menu {
-        font-family: "Noto Serif TC", "Noto Sans TC", serif;
-      }
+        .menu-card {
+            background: rgba(245, 230, 211, 0.98);
+            border: 1px solid #c4a574;
+            border-radius: 15px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
 
-      /* 羊皮紙卡片 */
-      .parchment-card {
-        background: linear-gradient(180deg, #faf3e8 0%, #f5e6d3 50%, #ebddc8 100%);
-        border: 1px solid #c4a574;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.5);
-      }
+        .btn-qty {
+            background: #fff;
+            border: 1px solid #1a237e;
+            color: #1a237e;
+            transition: all 0.2s;
+        }
 
-      /* 紅色標題橫幅 */
-      .banner-red {
-        background: linear-gradient(180deg, #a52a2a 0%, #8b2500 50%, #6b1d00 100%);
-        border: 2px solid #c4a574;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,200,100,0.2);
-      }
-
-      /* 加減按鈕 */
-      .btn-qty {
-        background: linear-gradient(180deg, #faf3e8 0%, #e8d4b8 100%);
-        border: 1.5px solid #8b7355;
-        color: #3d2b21;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.8);
-      }
-      .btn-qty:hover {
-        background: linear-gradient(180deg, #f5e6d3 0%, #e0c9a8 100%);
-      }
-      .btn-qty:active {
-        box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
-      }
+        .btn-qty:active {
+            background: #1a237e;
+            color: #fff;
+        }
     </style>
-  </head>
-  <body class="min-h-screen text-[#3d2b21] antialiased">
-    <div class="relative z-10 flex min-h-screen flex-col items-center overflow-x-hidden px-4 py-6 pb-12">
-      <!-- 語系切換 -->
-      <a
-        href="index.html"
-        class="absolute right-4 top-4 rounded border border-[#8b7355]/60 bg-[#f5e6d3]/90 px-2 py-1 text-xs text-[#5c4033] hover:bg-[#e8d4b8]"
-      >
-        English Version
-      </a>
+</head>
+<body class="antialiased">
 
-      <!-- 主內容區：羊皮紙風格 -->
-      <main class="w-full max-w-md space-y-6 rounded-2xl p-4 md:p-6" style="background: linear-gradient(180deg, rgba(250,243,232,0.95) 0%, rgba(245,230,211,0.98) 100%); box-shadow: 0 8px 32px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.6); border: 2px solid #c4a574;">
-        <!-- 頂部：美食主圖 + 紅色標題橫幅 -->
-        <header class="relative -mx-2 -mt-2 overflow-hidden rounded-t-xl md:-mx-4 md:-mt-4">
-          <div class="relative flex flex-col sm:flex-row">
-            <!-- 大的美食主圖 -->
-            <div class="relative h-48 w-full overflow-hidden sm:h-56 sm:flex-1">
-              <img
-                src="https://images.unsplash.com/photo-1591814468924-caf88d1232e1?w=800&q=85"
-                alt="牛肉麵"
-                class="h-full w-full object-cover"
-              />
-              <div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
+    <div id="sticky-order-bar">
+        您的取餐號碼：<span id="header-num" style="font-size: 1.3em; color: #ff6d00;"></span>
+    </div>
+
+    <div class="max-w-md mx-auto px-4 py-6">
+        
+        <header class="bg-white rounded-2xl p-6 mb-6 text-center shadow-lg">
+            <div class="flex items-center justify-center gap-3 mb-4">
+                <div style="background: var(--primary-blue); width:35px; height:35px; border-radius:8px; display:flex; align-items:center; justify-content:center; position:relative;">
+                    <span style="color:#fff; font-size:20px;">✔</span>
+                    <div style="position:absolute; top:-2px; right:-2px; background:var(--primary-orange); width:12px; height:12px; border-radius:50%; border:2px solid #fff;"></div>
+                </div>
+                <div class="font-bold text-2xl">
+                    <span style="color: var(--primary-blue);">OrderEase</span>
+                    <span style="color: var(--primary-orange);">點易</span>
+                </div>
             </div>
-            <!-- 牛肉麵菜單 標題橫幅 -->
-            <div class="banner-red flex flex-shrink-0 items-center justify-center px-6 py-4 sm:min-w-[180px] sm:flex-1">
-              <h1 class="font-menu text-2xl font-bold tracking-wide text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] sm:text-3xl" style="text-shadow: 0 0 1px #c4a574, 0 2px 4px rgba(0,0,0,0.5);">
-                牛肉麵菜單
-              </h1>
+            
+            <div class="inline-flex bg-gray-100 rounded-full p-1">
+                <button onclick="location.href='index.html'" class="px-6 py-2 rounded-full text-sm font-medium text-gray-500">English</button>
+                <button class="px-6 py-2 rounded-full text-sm font-medium bg-blue-700 text-white shadow-sm">中文</button>
             </div>
-          </div>
         </header>
 
-        <!-- 主食區 -->
-        <section class="space-y-3">
-          <div class="flex items-center gap-3 py-2">
-            <div class="h-px flex-1 bg-[#8b7355]/60"></div>
-            <span class="font-menu text-sm font-semibold text-[#5c4033]">主食</span>
-            <div class="h-px flex-1 bg-[#8b7355]/60"></div>
-          </div>
+        <main class="menu-card p-4 space-y-4">
+            <h2 class="text-center font-bold text-gray-700 border-b pb-2">精選主食</h2>
+            
+            <div id="menu-container" class="space-y-3">
+                </div>
 
-          <div class="space-y-3">
-            <!-- 紅燒牛肉麵 -->
-            <div class="parchment-card flex items-center justify-between gap-4 rounded-xl px-4 py-3">
-              <div class="flex-1">
-                <p class="font-semibold text-[#3d2b21]">紅燒牛肉麵</p>
-                <p class="text-sm font-bold" style="color: var(--accent-gold);">$150</p>
-              </div>
-              <div class="flex items-center gap-2">
-                <button type="button" id="btn-minus-braised" class="btn-qty flex h-8 w-8 items-center justify-center rounded-full text-lg font-bold leading-none">
-                  −
+            <div class="border-t-2 border-gray-200 pt-4 mt-6">
+                <div class="flex justify-between items-center mb-4">
+                    <span class="font-bold text-gray-600">總金額</span>
+                    <span id="total-price" class="text-2xl font-bold text-orange-600">$0</span>
+                </div>
+                <button onclick="submitToLine()" class="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-4 rounded-xl shadow-lg transition duration-200 active:scale-95">
+                    確認送出訂單
                 </button>
-                <span id="qty-braised" class="w-6 text-center text-sm font-semibold tabular-nums">0</span>
-                <button type="button" id="btn-plus-braised" class="btn-qty flex h-8 w-8 items-center justify-center rounded-full text-lg font-bold leading-none">
-                  +
-                </button>
-              </div>
             </div>
+        </main>
+    </div>
 
-            <!-- 清燉牛肉麵 -->
-            <div class="parchment-card flex items-center justify-between gap-4 rounded-xl px-4 py-3">
-              <div class="flex-1">
-                <p class="font-semibold text-[#3d2b21]">清燉牛肉麵</p>
-                <p class="text-sm font-bold" style="color: var(--accent-gold);">$150</p>
-              </div>
-              <div class="flex items-center gap-2">
-                <button type="button" id="btn-minus-clear" class="btn-qty flex h-8 w-8 items-center justify-center rounded-full text-lg font-bold leading-none">
-                  −
-                </button>
-                <span id="qty-clear" class="w-6 text-center text-sm font-semibold tabular-nums">0</span>
-                <button type="button" id="btn-plus-clear" class="btn-qty flex h-8 w-8 items-center justify-center rounded-full text-lg font-bold leading-none">
-                  +
-                </button>
-              </div>
-            </div>
-
-            <!-- 牛肉湯餃 -->
-            <div class="parchment-card flex items-center justify-between gap-4 rounded-xl px-4 py-3">
-              <div class="flex-1">
-                <p class="font-semibold text-[#3d2b21]">牛肉湯餃</p>
-                <p class="text-sm font-bold" style="color: var(--accent-gold);">$120</p>
-              </div>
-              <div class="flex items-center gap-2">
-                <button type="button" id="btn-minus-dumpling" class="btn-qty flex h-8 w-8 items-center justify-center rounded-full text-lg font-bold leading-none">
-                  −
-                </button>
-                <span id="qty-dumpling" class="w-6 text-center text-sm font-semibold tabular-nums">0</span>
-                <button type="button" id="btn-plus-dumpling" class="btn-qty flex h-8 w-8 items-center justify-center rounded-full text-lg font-bold leading-none">
-                  +
-                </button>
-              </div>
-            </div>
-
-            <!-- 榨菜肉絲麵 -->
-            <div class="parchment-card flex items-center justify-between gap-4 rounded-xl px-4 py-3">
-              <div class="flex-1">
-                <p class="font-semibold text-[#3d2b21]">榨菜肉絲麵</p>
-                <p class="text-sm font-bold" style="color: var(--accent-gold);">$90</p>
-              </div>
-              <div class="flex items-center gap-2">
-                <button type="button" id="btn-minus-pickled" class="btn-qty flex h-8 w-8 items-center justify-center rounded-full text-lg font-bold leading-none">
-                  −
-                </button>
-                <span id="qty-pickled" class="w-6 text-center text-sm font-semibold tabular-nums">0</span>
-                <button type="button" id="btn-plus-pickled" class="btn-qty flex h-8 w-8 items-center justify-center rounded-full text-lg font-bold leading-none">
-                  +
-                </button>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <!-- 小菜/湯品區 -->
-        <section class="space-y-3">
-          <div class="flex items-center gap-3 py-2">
-            <div class="h-px flex-1 bg-[#8b7355]/60"></div>
-            <span class="font-menu text-sm font-semibold text-[#5c4033]">小菜／湯品</span>
-            <div class="h-px flex-1 bg-[#8b7355]/60"></div>
-          </div>
-
-          <div class="space-y-3">
-            <div class="parchment-card flex items-center justify-between gap-4 rounded-xl px-4 py-3">
-              <div class="flex-1">
-                <p class="font-semibold text-[#3d2b21]">滷味拼盤</p>
-                <p class="text-sm font-bold" style="color: var(--accent-gold);">$60</p>
-              </div>
-              <div class="flex items-center gap-2">
-                <button type="button" id="btn-minus-luwei" class="btn-qty flex h-8 w-8 items-center justify-center rounded-full text-lg font-bold leading-none">−</button>
-                <span id="qty-luwei" class="w-6 text-center text-sm font-semibold tabular-nums">0</span>
-                <button type="button" id="btn-plus-luwei" class="btn-qty flex h-8 w-8 items-center justify-center rounded-full text-lg font-bold leading-none">+</button>
-              </div>
-            </div>
-            <div class="parchment-card flex items-center justify-between gap-4 rounded-xl px-4 py-3">
-              <div class="flex-1">
-                <p class="font-semibold text-[#3d2b21]">酸辣湯</p>
-                <p class="text-sm font-bold" style="color: var(--accent-gold);">$40</p>
-              </div>
-              <div class="flex items-center gap-2">
-                <button type="button" id="btn-minus-soup" class="btn-qty flex h-8 w-8 items-center justify-center rounded-full text-lg font-bold leading-none">−</button>
-                <span id="qty-soup" class="w-6 text-center text-sm font-semibold tabular-nums">0</span>
-                <button type="button" id="btn-plus-soup" class="btn-qty flex h-8 w-8 items-center justify-center rounded-full text-lg font-bold leading-none">+</button>
-              </div>
-            </div>
-            <div class="parchment-card flex items-center justify-between gap-4 rounded-xl px-4 py-3">
-              <div class="flex-1">
-                <p class="font-semibold text-[#3d2b21]">滷蛋（顆）</p>
-                <p class="text-sm font-bold" style="color: var(--accent-gold);">$15</p>
-              </div>
-              <div class="flex items-center gap-2">
-                <button type="button" id="btn-minus-egg" class="btn-qty flex h-8 w-8 items-center justify-center rounded-full text-lg font-bold leading-none">−</button>
-                <span id="qty-egg" class="w-6 text-center text-sm font-semibold tabular-nums">0</span>
-                <button type="button" id="btn-plus-egg" class="btn-qty flex h-8 w-8 items-center justify-center rounded-full text-lg font-bold leading-none">+</button>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <!-- 總金額 + 送出訂單 -->
-        <div class="border-t-2 border-[#c4a574]/60 pt-4">
-          <div class="flex items-center justify-between text-base">
-            <span class="font-semibold text-[#5c4033]">總金額</span>
-            <span id="order-total" class="text-xl font-bold" style="color: var(--accent-gold);">$0</span>
-          </div>
-          <button
-            id="line-order-btn"
-            type="button"
-            class="mt-3 w-full rounded-xl bg-[#8b2500] px-4 py-3.5 font-semibold text-white shadow-lg transition hover:bg-[#a52a2a] active:scale-[0.98]"
-          >
-            送出訂單到 LINE
-          </button>
+    <div id="success-modal" class="fixed inset-0 bg-black/60 z-[10000] hidden items-center justify-center p-4">
+        <div class="bg-white rounded-3xl p-8 max-w-xs w-full text-center shadow-2xl">
+            <div class="text-green-500 text-5xl mb-4">✔</div>
+            <h3 class="text-xl font-bold text-gray-800 mb-2">訂單已成功送出！</h3>
+            <p class="text-gray-600 mb-4">您的單號為：<br><span id="modal-num" class="text-3xl font-black text-blue-800"></span></p>
+            <button onclick="finalJump()" class="w-full bg-blue-800 text-white font-bold py-3 rounded-xl">好的 (跳轉LINE)</button>
         </div>
-      </main>
-
-      <!-- 訂單成功彈出視窗 -->
-      <div
-        id="order-modal"
-        class="fixed inset-0 z-50 hidden items-center justify-center px-4"
-      >
-        <div class="absolute inset-0 bg-black/50"></div>
-        <div
-          class="relative w-full max-w-xs rounded-2xl border border-[#c4a574] bg-[#f5e6d3] p-5 text-center shadow-[0_12px_32px_rgba(0,0,0,0.45)]"
-        >
-          <h2 class="font-menu text-lg font-bold text-[#5c4033]">
-            訂單已送出！
-          </h2>
-          <p class="mt-2 text-sm text-[#5c4033]">
-            您的取餐號碼為：
-            <span
-              id="order-number-display"
-              class="font-menu text-xl font-bold tracking-[0.25em]"
-              style="color: var(--accent-red);"
-            ></span>
-          </p>
-          <p class="mt-2 text-[11px] text-[#8b7355]">
-            請截圖或記下此號碼，至櫃檯報號取餐，謝謝。
-          </p>
-          <button
-            id="order-modal-close"
-            type="button"
-            class="mt-4 w-full rounded-xl bg-[#8b2500] px-4 py-2.5 text-sm font-semibold text-white shadow-lg transition hover:bg-[#a52a2a] active:scale-[0.98]"
-          >
-            好的
-          </button>
-        </div>
-      </div>
-
-      <footer class="mt-4 text-center text-xs text-[#8b7355]">
-        <p>© <span id="year"></span> GA · 牛肉麵菜單</p>
-      </footer>
     </div>
 
     <script>
-      document.getElementById("year").textContent = new Date().getFullYear();
-
-      (function () {
-        const items = [
-          { id: "braised", label: "紅燒牛肉麵", price: 150 },
-          { id: "clear", label: "清燉牛肉麵", price: 150 },
-          { id: "dumpling", label: "牛肉湯餃", price: 120 },
-          { id: "pickled", label: "榨菜肉絲麵", price: 90 },
-          { id: "luwei", label: "滷味拼盤", price: 60 },
-          { id: "soup", label: "酸辣湯", price: 40 },
-          { id: "egg", label: "滷蛋（顆）", price: 15 },
+        const menuItems = [
+            { id: "braised", name: "紅燒牛肉麵", price: 150 },
+            { id: "clear", name: "清燉牛肉麵", price: 150 },
+            { id: "dumpling", name: "牛肉湯餃", price: 120 },
+            { id: "luwei", name: "滷味拼盤", price: 60 },
+            { id: "soup", name: "酸辣湯", price: 40 },
+            { id: "egg", name: "滷蛋（顆）", price: 15 }
         ];
 
-        const quantities = {};
-        items.forEach((item) => {
-          quantities[item.id] = 0;
+        let cart = {};
+        let currentLineUrl = "";
+
+        // 生成菜單界面
+        const container = document.getElementById('menu-container');
+        menuItems.forEach(item => {
+            cart[item.id] = 0;
+            container.innerHTML += `
+                <div class="flex items-center justify-between p-2 border-b border-gray-100">
+                    <div>
+                        <div class="font-bold text-gray-800">${item.name}</div>
+                        <div class="text-sm text-orange-600 font-bold">$${item.price}</div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button onclick="updateQty('${item.id}', -1)" class="btn-qty w-8 h-8 rounded-full font-bold">－</button>
+                        <span id="qty-${item.id}" class="font-bold w-4 text-center">0</span>
+                        <button onclick="updateQty('${item.id}', 1)" class="btn-qty w-8 h-8 rounded-full font-bold">＋</button>
+                    </div>
+                </div>
+            `;
         });
 
-        const totalEl = document.getElementById("order-total");
-        const lineBtn = document.getElementById("line-order-btn");
-        const orderModal = document.getElementById("order-modal");
-        const orderNumberEl = document.getElementById("order-number-display");
-        const orderModalClose = document.getElementById("order-modal-close");
-
-        function updateQtyDisplay(id) {
-          const span = document.getElementById(`qty-${id}`);
-          if (span) span.textContent = quantities[id];
+        function updateQty(id, change) {
+            cart[id] = Math.max(0, cart[id] + change);
+            document.getElementById(`qty-${id}`).innerText = cart[id];
+            
+            let total = 0;
+            menuItems.forEach(item => { total += cart[item.id] * item.price; });
+            document.getElementById('total-price').innerText = `$${total}`;
         }
 
-        function updateTotal() {
-          const total = items.reduce((sum, item) => sum + quantities[item.id] * item.price, 0);
-          if (totalEl) totalEl.textContent = `$${total}`;
-          return total;
-        }
-
-        // 產生訂單編號（格式：MMDD-HHMM）
-        function generateOrderId() {
-          const now = new Date();
-          const month = String(now.getMonth() + 1).padStart(2, "0");
-          const day = String(now.getDate()).padStart(2, "0");
-          const hours = String(now.getHours()).padStart(2, "0");
-          const minutes = String(now.getMinutes()).padStart(2, "0");
-          return `${month}${day}-${hours}${minutes}`;
-        }
-
-        function openOrderModal(orderId) {
-          if (orderNumberEl) {
-            orderNumberEl.textContent = orderId;
-          }
-          if (orderModal) {
-            orderModal.classList.remove("hidden");
-            orderModal.classList.add("flex");
-          }
-        }
-
-        function closeOrderModal() {
-          if (orderModal) {
-            orderModal.classList.add("hidden");
-            orderModal.classList.remove("flex");
-          }
-        }
-
-        if (orderModalClose) {
-          orderModalClose.addEventListener("click", closeOrderModal);
-        }
-
-        if (orderModal) {
-          orderModal.addEventListener("click", (event) => {
-            if (event.target === orderModal) {
-              closeOrderModal();
-            }
-          });
-        }
-
-        items.forEach((item) => {
-          const plusBtn = document.getElementById(`btn-plus-${item.id}`);
-          const minusBtn = document.getElementById(`btn-minus-${item.id}`);
-          if (plusBtn) {
-            plusBtn.addEventListener("click", () => {
-              quantities[item.id] += 1;
-              updateQtyDisplay(item.id);
-              updateTotal();
+        function submitToLine() {
+            let total = 0;
+            let itemsText = "";
+            menuItems.forEach(item => {
+                if (cart[item.id] > 0) {
+                    itemsText += `・${item.name} x${cart[item.id]} ($${item.price * cart[item.id]})\n`;
+                    total += cart[item.id] * item.price;
+                }
             });
-          }
-          if (minusBtn) {
-            minusBtn.addEventListener("click", () => {
-              if (quantities[item.id] > 0) {
-                quantities[item.id] -= 1;
-                updateQtyDisplay(item.id);
-                updateTotal();
-              }
-            });
-          }
-        });
 
-        if (lineBtn) {
-          lineBtn.addEventListener("click", () => {
-            const selected = items.filter((item) => quantities[item.id] > 0);
-            if (selected.length === 0) {
-              alert("請先選擇餐點數量再送出訂單。");
-              return;
-            }
-            const total = updateTotal();
-            const orderId = generateOrderId();
+            if (total === 0) { return alert("請至少選擇一項餐點！"); }
 
-            // 格式化訂單文字（多行、乾淨排版）
-            const lines = [];
-            lines.push(`【單號 ${orderId}】`);
-            lines.push("訂購項目：");
-            selected.forEach((item) => {
-              lines.push(`・${item.label} x${quantities[item.id]}`);
-            });
-            lines.push(`總金額：${total} 元`);
+            const now = new Date();
+            const orderId = `${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}-${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}`;
+            
+            // 構建完整訊息 (URL Scheme 格式)
+            const message = `【取餐單號：${orderId}】\n\n點購品項：\n${itemsText}\n總金額：${total} 元\n\n(請直接傳送訊息，謝謝！)`;
+            currentLineUrl = `https://line.me/R/msg/text/?${encodeURIComponent(message)}`;
 
-            const message = lines.join("\n");
-            const url = `https://line.me/R/msg/text/?${encodeURIComponent(message)}`;
+            // 更新 UI：顯示置頂號碼條
+            document.getElementById('header-num').innerText = orderId;
+            document.getElementById('sticky-order-bar').style.display = 'block';
+            document.body.style.paddingTop = '60px';
 
-            window.open(url, "_blank");
-            openOrderModal(orderId);
-          });
+            // 顯示彈窗
+            document.getElementById('modal-num').innerText = orderId;
+            document.getElementById('success-modal').style.display = 'flex';
         }
-      })();
+
+        function finalJump() {
+            window.location.href = currentLineUrl;
+        }
     </script>
-  </body>
+</body>
 </html>
