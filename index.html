@@ -97,20 +97,11 @@
                     <span class="font-bold text-gray-600">Total Amount</span>
                     <span id="total-price" class="text-2xl font-bold text-orange-600">$0</span>
                 </div>
-                <button onclick="submitToLine()" class="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-4 rounded-xl shadow-lg transition duration-200 active:scale-95">
+                <button id="main-submit-btn" onclick="submitToLine()" class="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-4 rounded-xl shadow-lg transition duration-200 active:scale-95">
                     Confirm & Send to LINE
                 </button>
             </div>
         </main>
-    </div>
-
-    <div id="success-modal" class="fixed inset-0 bg-black/60 z-[10000] hidden items-center justify-center p-4">
-        <div class="bg-white rounded-3xl p-8 max-w-xs w-full text-center shadow-2xl">
-            <div class="text-green-500 text-5xl mb-4">✔</div>
-            <h3 class="text-xl font-bold text-gray-800 mb-2">Order Sent!</h3>
-            <p class="text-gray-600 mb-4">Your Number:<br><span id="modal-num" class="text-3xl font-black text-blue-800"></span></p>
-            <button onclick="finalJump()" class="w-full bg-blue-800 text-white font-bold py-3 rounded-xl">OK (Open LINE)</button>
-        </div>
     </div>
 
     <script>
@@ -124,7 +115,6 @@
         ];
 
         let cart = {};
-        let currentLineUrl = "";
         let currentOrderId = null;
 
         const container = document.getElementById('menu-container');
@@ -153,6 +143,7 @@
             document.getElementById('total-price').innerText = `$${total}`;
         }
 
+        // English One-Click Submission
         function submitToLine() {
             let total = 0;
             let itemsText = "";
@@ -172,16 +163,10 @@
             
             const isAddOn = document.getElementById('order-status-card') ? true : false;
             const titleTag = isAddOn ? "【Add-on Order No" : "【Pickup No";
+            const message = `${titleTag}: ${currentOrderId}】\n\nItems:\n${itemsText}\nTotal Amount: $${total}\n\n(Please click send, thank you!)`;
+            const lineUrl = `https://line.me/R/msg/text/?${encodeURIComponent(message)}`;
 
-            const message = `${titleTag}: ${currentOrderId}】\n\nItems:\n${itemsText}\nTotal: $${total}\n\n(Please send this message, thank you!)`;
-            currentLineUrl = `https://line.me/R/msg/text/?${encodeURIComponent(message)}`;
-
-            document.getElementById('modal-num').innerText = currentOrderId;
-            document.getElementById('success-modal').style.display = 'flex';
-        }
-
-        function finalJump() {
-            document.getElementById('success-modal').style.display = 'none';
+            // Update UI before jump
             document.getElementById('header-num').innerText = currentOrderId;
             document.getElementById('sticky-order-bar').style.display = 'block';
             document.body.style.paddingTop = '60px';
@@ -189,15 +174,16 @@
             const statusArea = document.getElementById('reorder-status-area');
             statusArea.innerHTML = `
                 <div id="order-status-card" class="bg-blue-50 border-2 border-blue-200 rounded-xl p-4 mb-4 text-center">
-                    <p class="font-bold text-blue-900 text-sm">✅ Order #${currentOrderId} Sent</p>
-                    <p class="text-xs text-blue-700 mb-2">Message carried to LINE, please click send!</p>
+                    <p class="font-bold text-blue-900 text-sm">✅ Order #${currentOrderId} Processing</p>
+                    <p class="text-xs text-blue-700 mb-2">Jumping to LINE, remember to click send!</p>
                     <button onclick="prepareForReorder()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2 px-4 rounded-lg shadow">
                         Add More Items
                     </button>
                 </div>
             `;
 
-            window.location.href = currentLineUrl;
+            // Direct Jump
+            window.location.href = lineUrl;
         }
 
         function prepareForReorder() {
