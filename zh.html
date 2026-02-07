@@ -36,7 +36,7 @@
             z-index: 9999;
             border-bottom: 2px solid #ff6d00;
             box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-            display: none; /* 預設隱藏 */
+            display: none; 
         }
 
         .menu-card {
@@ -86,17 +86,18 @@
         </header>
 
         <main class="menu-card p-4 space-y-4">
+            <div id="reorder-status-area"></div>
+
             <h2 class="text-center font-bold text-gray-700 border-b pb-2">精選主食</h2>
             
-            <div id="menu-container" class="space-y-3">
-                </div>
+            <div id="menu-container" class="space-y-3"></div>
 
             <div class="border-t-2 border-gray-200 pt-4 mt-6">
                 <div class="flex justify-between items-center mb-4">
                     <span class="font-bold text-gray-600">總金額</span>
                     <span id="total-price" class="text-2xl font-bold text-orange-600">$0</span>
                 </div>
-                <button onclick="submitToLine()" class="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-4 rounded-xl shadow-lg transition duration-200 active:scale-95">
+                <button id="main-submit-btn" onclick="submitToLine()" class="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-4 rounded-xl shadow-lg transition duration-200 active:scale-95">
                     確認送出訂單
                 </button>
             </div>
@@ -124,6 +125,7 @@
 
         let cart = {};
         let currentLineUrl = "";
+        let currentOrderId = null; // 鎖定單號用
 
         // 生成菜單界面
         const container = document.getElementById('menu-container');
@@ -165,25 +167,60 @@
 
             if (total === 0) { return alert("請至少選擇一項餐點！"); }
 
-            const now = new Date();
-            const orderId = `${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}-${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}`;
+            // 如果是第一次點餐才產生單號
+            if (!currentOrderId) {
+                const now = new Date();
+                currentOrderId = `${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}-${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}`;
+            }
             
-            // 構建完整訊息 (URL Scheme 格式)
-            const message = `【取餐單號：${orderId}】\n\n點購品項：\n${itemsText}\n總金額：${total} 元\n\n(請直接傳送訊息，謝謝！)`;
+            // 判斷是否為加點單
+            const isAddOn = document.getElementById('order-status-card') ? true : false;
+            const titleTag = isAddOn ? "【加點單號" : "【取餐單號";
+
+            const message = `${titleTag}：${currentOrderId}】\n\n點購品項：\n${itemsText}\n總金額：${total} 元\n\n(請直接傳送訊息，謝謝！)`;
             currentLineUrl = `https://line.me/R/msg/text/?${encodeURIComponent(message)}`;
 
-            // 更新 UI：顯示置頂號碼條
-            document.getElementById('header-num').innerText = orderId;
-            document.getElementById('sticky-order-bar').style.display = 'block';
-            document.body.style.paddingTop = '60px';
-
-            // 顯示彈窗
-            document.getElementById('modal-num').innerText = orderId;
+            // 更新 UI 彈窗
+            document.getElementById('modal-num').innerText = currentOrderId;
             document.getElementById('success-modal').style.display = 'flex';
         }
 
         function finalJump() {
+            // 1. 隱藏彈窗
+            document.getElementById('success-modal').style.display = 'none';
+
+            // 2. 顯示置頂號碼條
+            document.getElementById('header-num').innerText = currentOrderId;
+            document.getElementById('sticky-order-bar').style.display = 'block';
+            document.body.style.paddingTop = '60px';
+
+            // 3. 顯示續點狀態卡
+            const statusArea = document.getElementById('reorder-status-area');
+            statusArea.innerHTML = `
+                <div id="order-status-card" class="bg-blue-50 border-2 border-blue-200 rounded-xl p-4 mb-4 text-center shadow-inner">
+                    <p class="font-bold text-blue-900 text-sm">✅ 訂單 #${currentOrderId} 已送出</p>
+                    <p class="text-xs text-blue-700 mb-2">訊息已帶往 LINE，請記得按傳送</p>
+                    <button onclick="prepareForReorder()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2 px-4 rounded-lg shadow transition">
+                        我要加點 (Add More)
+                    </button>
+                </div>
+            `;
+
+            // 4. 跳轉 LINE
             window.location.href = currentLineUrl;
+        }
+
+        // 續點重置邏輯
+        function prepareForReorder() {
+            // 清空選擇數量
+            menuItems.forEach(item => {
+                cart[item.id] = 0;
+                document.getElementById(`qty-${item.id}`).innerText = "0";
+            });
+            // 重置總額顯示
+            document.getElementById('total-price').innerText = "$0";
+            // 滾動回菜單頂部
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
     </script>
 </body>
