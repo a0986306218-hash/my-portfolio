@@ -36,7 +36,6 @@
         </header>
 
         <main class="menu-card p-4 space-y-4">
-            <div id="reorder-status-area"></div>
             <h2 class="text-center font-bold text-gray-700 border-b pb-2">精選主食</h2>
             <div id="menu-container" class="space-y-3"></div>
             <div class="border-t-2 border-gray-200 pt-4 mt-6">
@@ -44,7 +43,7 @@
                     <span class="font-bold text-gray-600">總金額</span>
                     <span id="total-price" class="text-2xl font-bold text-orange-600">$0</span>
                 </div>
-                <button onclick="submitToLine()" class="w-full bg-orange-600 text-white font-bold py-4 rounded-xl shadow-lg active:scale-95">確認送出</button>
+                <button onclick="submitToLine()" class="w-full bg-orange-600 text-white font-bold py-4 rounded-xl shadow-lg active:scale-95 transition">確認送出訂單</button>
             </div>
         </main>
     </div>
@@ -76,9 +75,9 @@
                     <div class="flex items-center justify-between p-2 border-b border-gray-100">
                         <div><b>${item.name}</b><br><span class="text-orange-600 font-bold">$${item.price}</span></div>
                         <div class="flex items-center gap-3">
-                            <button onclick="updateQty('${item.id}', -1)" class="w-8 h-8 rounded-full border border-blue-800">-</button>
-                            <span id="qty-${item.id}" class="font-bold">0</span>
-                            <button onclick="updateQty('${item.id}', 1)" class="w-8 h-8 rounded-full border border-blue-800">+</button>
+                            <button onclick="updateQty('${item.id}', -1)" class="w-8 h-8 rounded-full border border-blue-800 text-blue-800 font-bold">-</button>
+                            <span id="qty-${item.id}" class="font-bold w-4 text-center">0</span>
+                            <button onclick="updateQty('${item.id}', 1)" class="w-8 h-8 rounded-full border border-blue-800 text-blue-800 font-bold">+</button>
                         </div>
                     </div>
                 `;
@@ -97,20 +96,21 @@
             menuItems.forEach(item => { if(cart[item.id] > 0) { itemsText += `・${item.name} x${cart[item.id]}\n`; total += cart[item.id]*item.price; } });
             if (total === 0) return alert("請先選擇餐點！");
 
-            // 解決單號重複：增加 4 位隨機數
-            if (!currentOrderId) {
+            const isFirstOrder = !currentOrderId;
+            if (isFirstOrder) {
                 const now = new Date();
                 const randomPart = Math.floor(Math.random() * 9000 + 1000); 
                 currentOrderId = `${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}-${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}-${randomPart}`;
                 localStorage.setItem('orderId', currentOrderId);
             }
             
-            // 判斷是否為加點
-            const isAddOn = document.getElementById('order-status-card') ? true : false;
-            const title = isAddOn ? "【加點單號" : "【取餐單號";
-            const msg = `${title}：${currentOrderId}】\n\n項目：\n${itemsText}\n總金額：${total} 元\n\n(請點擊傳送，謝謝！)`;
+            const title = isFirstOrder ? "【取餐單號" : "【加點單號";
+            const msg = `${title}：${currentOrderId}】\n\n項目：\n${itemsText}\n總金額：${total} 元`;
             
             showOrderState(currentOrderId);
+            // 送出後自動清空購物車，為下一次加點做準備
+            prepareForNext();
+            
             setTimeout(() => { window.location.href = `https://line.me/R/msg/text/?${encodeURIComponent(msg)}`; }, 100);
         }
 
@@ -118,24 +118,15 @@
             document.getElementById('header-num').innerText = id;
             document.getElementById('sticky-order-bar').style.display = 'block';
             document.body.style.paddingTop = '60px';
-            document.getElementById('reorder-status-area').innerHTML = `
-                <div id="order-status-card" class="bg-blue-50 border-2 border-blue-200 rounded-xl p-4 mb-4 text-center">
-                    <p class="font-bold text-blue-900 text-sm">單號：#${id}</p>
-                    <button onclick="prepareForReorder()" class="bg-blue-600 text-white text-xs font-bold py-2 px-4 rounded-lg mt-2 shadow">我要加點 (Add More)</button>
-                </div>
-            `;
         }
 
-        // 「我要加點」的真正作用：清空菜單，準備下一波點餐
-        function prepareForReorder() {
+        function prepareForNext() {
             menuItems.forEach(item => { cart[item.id] = 0; document.getElementById(`qty-${item.id}`).innerText = "0"; });
             document.getElementById('total-price').innerText = "$0";
-            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        // 徹底清除資料：結帳或換下一桌客人才按
         function clearAllData() {
-            if(confirm("確定要清除單號並開始新訂單嗎？")) {
+            if(confirm("確定要結帳並清除單號嗎？")) {
                 localStorage.removeItem('orderId');
                 location.reload();
             }
