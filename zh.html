@@ -3,114 +3,80 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OrderEase - 專業雲端接單系統</title>
+    <title>OrderEase 鈴聲旗艦版</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Noto Sans TC', sans-serif; background-color: #f8fafc; }
-        #header-bar { position: sticky; top: 0; z-index: 50; background: #1e293b; color: white; padding: 1.25rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
-        .menu-card { background: white; border-radius: 1rem; padding: 1.25rem; margin-bottom: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; }
-        .item-qty { width: 4.5rem; height: 3rem; font-size: 1.5rem; border: 2px solid #cbd5e1; border-radius: 0.5rem; text-align: center; }
-        .btn-submit { background-color: #059669; color: white; padding: 1.25rem; width: 100%; border-radius: 0.75rem; font-weight: bold; font-size: 1.5rem; margin-top: 2rem; transition: background 0.2s; }
-        .btn-submit:active { background-color: #047857; transform: scale(0.98); }
-    </script>
+        body { font-family: sans-serif; background-color: #f1f5f9; padding-bottom: 60px; }
+        .header { position: sticky; top: 0; background: #1e293b; color: #fbbf24; padding: 20px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 100; }
+        .card { background: white; border-radius: 16px; padding: 20px; margin: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; border: 1px solid #e2e8f0; }
+        .qty-input { width: 70px; height: 50px; font-size: 24px; text-align: center; border: 2px solid #cbd5e1; border-radius: 12px; font-weight: bold; color: #1e293b; }
+        .btn-send { background: #10b981; color: white; width: calc(100% - 30px); margin: 15px; padding: 20px; border-radius: 16px; font-size: 24px; font-weight: bold; box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.3); }
+        .btn-send:active { transform: scale(0.95); background: #059669; }
+    </style>
 </head>
-<body class="pb-10">
-
-    <div id="header-bar" class="flex justify-between items-center">
-        <div>
-            <p class="text-xs text-slate-400 uppercase tracking-wider">今日接單單號</p>
-            <p id="header-num" class="text-3xl font-black text-emerald-400">正在生成...</p>
-        </div>
-        <button onclick="location.reload()" class="bg-slate-700 px-4 py-2 rounded-lg text-sm font-medium">重整頁面</button>
+<body>
+    <div class="header">
+        <p class="text-xs text-slate-400">今日接單單號</p>
+        <h1 id="order-id" class="text-3xl font-black">生成中...</h1>
     </div>
 
-    <div class="p-4 max-w-md mx-auto">
-        <div class="menu-card flex justify-between items-center">
-            <div class="flex-1">
-                <h3 class="text-xl font-bold text-slate-800">紅燒牛肉麵</h3>
-                <p class="text-emerald-600 font-bold">$150</p>
-            </div>
-            <input type="number" class="item-qty" data-name="紅燒牛肉麵" data-price="150" value="0" min="0">
-        </div>
-
-        <div class="menu-card flex justify-between items-center">
-            <div class="flex-1">
-                <h3 class="text-xl font-bold text-slate-800">清燉牛肉麵</h3>
-                <p class="text-emerald-600 font-bold">$150</p>
-            </div>
-            <input type="number" class="item-qty" data-name="清燉牛肉麵" data-price="150" value="0" min="0">
-        </div>
-
-        <div class="menu-card flex justify-between items-center">
-            <div class="flex-1">
-                <h3 class="text-xl font-bold text-slate-800">滷蛋 (顆)</h3>
-                <p class="text-emerald-600 font-bold">$15</p>
-            </div>
-            <input type="number" class="item-qty" data-name="滷蛋(顆)" data-price="15" value="0" min="0">
-        </div>
-
-        <button onclick="submitOrder()" class="btn-submit shadow-lg">確認送出訂單</button>
+    <div class="card">
+        <div><h2 class="text-xl font-bold text-slate-800">紅燒牛肉麵</h2><p class="text-emerald-600 font-bold">$150</p></div>
+        <input type="number" class="qty-input" data-name="紅燒牛肉麵" data-price="150" value="0" min="0">
     </div>
+
+    <div class="card">
+        <div><h2 class="text-xl font-bold text-slate-800">滷肉飯(大)</h2><p class="text-emerald-600 font-bold">$50</p></div>
+        <input type="number" class="qty-input" data-name="滷肉飯(大)" data-price="50" value="0" min="0">
+    </div>
+
+    <button onclick="sendOrder()" class="btn-send">🔥 送出訂單 (聽鈴聲)</button>
 
     <script>
-        // 【重要】已填入第 10 版正確 Web App URL
+        // 【核心網址】對照 image_7657c1.jpg 校正：s 結尾，且包含 ajf1
         const scriptURL = 'https://script.google.com/macros/s/AKfycbys5EEI2YgAPL5YXRbqdedZ_ajf1VWU2ACNN861AqE4n6egJ1-A1a1wZBm9IZyIWp0m/exec';
 
-        // 自動生成單號 (時分-隨機數)
-        function generateOrderNum() {
-            const now = new Date();
-            const timePart = now.getHours().toString().padStart(2,'0') + now.getMinutes().toString().padStart(2,'0');
-            const randomPart = Math.floor(Math.random() * 9000 + 1000);
-            return `${timePart}-${randomPart}`;
-        }
+        // 預備鈴聲音訊 (這是一個清脆的叮咚聲)
+        const dingSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
 
-        const currentOrderId = generateOrderNum();
-        document.getElementById('header-num').innerText = currentOrderId;
+        // 生成單號
+        const orderNum = "ORDER-" + Math.floor(Math.random() * 9000 + 1000);
+        document.getElementById('order-id').innerText = orderNum;
 
-        async function submitOrder() {
+        async function sendOrder() {
             const items = [];
             let total = 0;
-
-            document.querySelectorAll('.item-qty').forEach(input => {
+            document.querySelectorAll('.qty-input').forEach(input => {
                 const qty = parseInt(input.value);
-                if (qty > 0) {
-                    const name = input.getAttribute('data-name');
-                    const price = parseInt(input.getAttribute('data-price'));
-                    items.push(`${name} x${qty}`);
-                    total += price * qty;
+                if(qty > 0) {
+                    items.push(input.getAttribute('data-name') + " x" + qty);
+                    total += qty * parseInt(input.getAttribute('data-price'));
                 }
             });
 
-            if (items.length === 0) {
-                alert("❌ 請先點餐！");
-                return;
-            }
+            if(items.length === 0) return alert("客官，您還沒點餐呢！");
 
-            const btn = document.querySelector('.btn-submit');
-            btn.innerText = "🚀 訂單傳送中...";
+            const btn = document.querySelector('.btn-send');
+            btn.innerText = "⚡ 正在傳送...";
             btn.disabled = true;
 
             try {
-                // 傳送資料到 Google 試算表
+                // 發送到 Apps Script
                 await fetch(scriptURL, {
                     method: 'POST',
                     mode: 'no-cors',
-                    cache: 'no-cache',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        orderId: currentOrderId,
-                        items: items.join('\n'),
-                        total: total
-                    })
+                    body: JSON.stringify({ orderId: orderNum, items: items.join('\n'), total: total })
                 });
 
-                alert("✅ 訂單已成功送達！");
-                location.reload(); // 成功後自動刷新，確保單號不重複
-            } catch (error) {
-                alert("⚠️ 傳送失敗，請檢查網路連線！");
-                btn.innerText = "重新送出訂單";
+                // 【鈴聲響起】傳送成功即播放
+                dingSound.play();
+
+                alert("✅ 成功！聽到鈴聲了嗎？新訂單已插在最上方。");
+                location.reload(); 
+            } catch (e) {
+                alert("❌ 慘了，網路斷了！");
                 btn.disabled = false;
+                btn.innerText = "再試一次";
             }
         }
     </script>
