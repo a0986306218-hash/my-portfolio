@@ -49,7 +49,7 @@
     </div>
 
     <script>
-        // 【核心修正】填入第 10 版正確 Web App URL
+        // 【核心網址】對照 image_7657c1.jpg 手動校正，結尾是 IZyIWp0m/exec
         const scriptURL = 'https://script.google.com/macros/s/AKfycbys5EEI2YgAPL5YXRbqdedZ_ajf1VWU2ACNN861AqE4n6egJ1-A1a1wZBm9IZyIWp0m/exec';
 
         const menuItems = [
@@ -94,13 +94,13 @@
             document.getElementById('total-price').innerText = `$${total}`;
         }
 
+        // 修改原本的函數，移除 LINE 跳轉，改為專心傳送試算表
         async function submitToLine() {
-            let total = 0, itemsText = "";
+            let total = 0;
             let rawItems = [];
             
             menuItems.forEach(item => { 
                 if(cart[item.id] > 0) { 
-                    itemsText += `・${item.name} x${cart[item.id]}\n`; 
                     rawItems.push(`${item.name} x${cart[item.id]}`);
                     total += cart[item.id]*item.price; 
                 } 
@@ -116,38 +116,32 @@
                 localStorage.setItem('orderId', currentOrderId);
             }
 
-            // --- 🚀 新增：發送到 Google 試算表 ---
             const submitBtn = document.getElementById('submit-btn');
-            submitBtn.innerText = "傳送至系統...";
+            submitBtn.innerText = "⚡ 正在傳送至櫃檯...";
             submitBtn.disabled = true;
 
             try {
+                // 【核心動作】發送到 Apps Script 第 10 版大腦
                 await fetch(scriptURL, {
                     method: 'POST',
                     mode: 'no-cors',
-                    cache: 'no-cache',
                     body: JSON.stringify({
                         orderId: currentOrderId,
                         items: rawItems.join('\n'),
                         total: total
                     })
                 });
+                
+                alert("✅ 訂單已送出！請確認試算表最上方。");
+                showOrderState(currentOrderId);
+                prepareForNext(); // 清空購物車，方便下位顧客
+                submitBtn.innerText = "確認送出訂單";
+                submitBtn.disabled = false;
             } catch (e) {
-                console.error("試算表同步失敗", e);
+                alert("❌ 傳送失敗，請檢查網路！");
+                submitBtn.innerText = "確認送出訂單";
+                submitBtn.disabled = false;
             }
-            // ------------------------------------
-
-            const title = isFirstOrder ? "【取餐單號" : "【加點單號";
-            const msg = `${title}：${currentOrderId}】\n\n項目：\n${itemsText}\n總金額：${total} 元`;
-            
-            showOrderState(currentOrderId);
-            prepareForNext();
-            
-            alert("訂單已送出至系統！點擊確定後將開啟 LINE 傳送訊息。");
-            submitBtn.innerText = "確認送出訂單";
-            submitBtn.disabled = false;
-            
-            setTimeout(() => { window.location.href = `https://line.me/R/msg/text/?${encodeURIComponent(msg)}`; }, 100);
         }
 
         function showOrderState(id) {
