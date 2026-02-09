@@ -17,7 +17,7 @@
 
     <div id="sticky-order-bar">
         Order ID: <span id="header-num" style="color: #ff6d00;"></span>
-        <button onclick="clearAllData()" class="ml-4 text-xs bg-red-700 text-white px-2 py-1 rounded">New Order</button>
+        <button onclick="clearAllData()" class="ml-4 text-xs bg-red-700 text-white px-2 py-1 rounded">New Customer</button>
     </div>
 
     <div class="max-w-md mx-auto px-4 py-6">
@@ -43,22 +43,23 @@
                     <span class="font-bold text-gray-600">Total Price</span>
                     <span id="total-price" class="text-2xl font-bold text-orange-600">$0</span>
                 </div>
-                <button id="submit-btn" onclick="submitToSpreadsheet()" class="w-full bg-orange-600 text-white font-bold py-4 rounded-xl shadow-lg active:scale-95 transition">Confirm Order</button>
+                <button id="submit-btn" onclick="submitToSpreadsheet()" class="w-full bg-orange-600 text-white font-bold py-4 rounded-xl shadow-lg active:scale-95 transition">Send Order</button>
             </div>
         </main>
     </div>
 
     <script>
-        // Use the URL you provided
+        // Use your specified Web App URL
         const scriptURL = 'https://script.google.com/macros/s/AKfycby5EEI2YgAPL5YXRbqdedZ_eJf1VWU2ACNn861AqE4n6egJ1-A1a1wZBm9lZyinh_k/exec';
 
+        // Added 'zhName' for the boss to read
         const menuItems = [
-            { id: "braised", name: "Braised Beef Noodles", price: 150 },
-            { id: "clear", name: "Clear Broth Beef Noodles", price: 150 },
-            { id: "dumpling", name: "Beef Soup Dumplings", price: 120 },
-            { id: "luwei", name: "Signature Braised Platter", price: 60 },
-            { id: "soup", name: "Hot and Sour Soup", price: 40 },
-            { id: "egg", name: "Marinated Egg (pc)", price: 15 }
+            { id: "braised", name: "Braised Beef Noodles", zhName: "紅燒牛肉麵", price: 150 },
+            { id: "clear", name: "Clear Broth Beef Noodles", zhName: "清燉牛肉麵", price: 150 },
+            { id: "dumpling", name: "Beef Soup Dumplings", zhName: "牛肉湯餃", price: 120 },
+            { id: "luwei", name: "Signature Braised Platter", zhName: "滷味拼盤", price: 60 },
+            { id: "soup", name: "Hot and Sour Soup", zhName: "酸辣湯", price: 40 },
+            { id: "egg", name: "Marinated Egg (pc)", zhName: "滷蛋（顆）", price: 15 }
         ];
 
         let cart = {};
@@ -100,7 +101,8 @@
             
             menuItems.forEach(item => { 
                 if(cart[item.id] > 0) { 
-                    rawItems.push(`${item.name} x${cart[item.id]}`);
+                    // CRITICAL: Send zhName to spreadsheet instead of English name
+                    rawItems.push(`${item.zhName} x${cart[item.id]}`);
                     total += cart[item.id]*item.price; 
                 } 
             });
@@ -115,11 +117,10 @@
             }
 
             const btn = document.getElementById('submit-btn');
-            btn.innerText = "⚡ Submitting Order...";
+            btn.innerText = "⚡ Sending Order...";
             btn.disabled = true;
 
             try {
-                // Send to the specified spreadsheet URL
                 await fetch(scriptURL, {
                     method: 'POST',
                     mode: 'no-cors',
@@ -130,15 +131,15 @@
                     })
                 });
                 
-                alert("✅ Order has been sent successfully!");
+                alert("✅ Order sent! Your meal is being prepared.");
                 showOrderState(currentOrderId);
                 prepareForNext();
-                btn.innerText = "Confirm Order";
+                btn.innerText = "Send Order";
                 btn.disabled = false;
             } catch (e) {
-                alert("❌ Connection error, please try again!");
+                alert("❌ Connection error!");
                 btn.disabled = false;
-                btn.innerText = "Confirm Order";
+                btn.innerText = "Send Order";
             }
         }
 
@@ -154,7 +155,7 @@
         }
 
         function clearAllData() {
-            if(confirm("Confirm to checkout and clear the order ID?")) {
+            if(confirm("New customer? All order data will be cleared.")) {
                 localStorage.removeItem('orderId');
                 location.reload();
             }
