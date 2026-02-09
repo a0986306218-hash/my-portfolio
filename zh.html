@@ -43,14 +43,14 @@
                     <span class="font-bold text-gray-600">總金額</span>
                     <span id="total-price" class="text-2xl font-bold text-orange-600">$0</span>
                 </div>
-                <button id="submit-btn" onclick="submitToLine()" class="w-full bg-orange-600 text-white font-bold py-4 rounded-xl shadow-lg active:scale-95 transition">確認送出訂單</button>
+                <button id="submit-btn" onclick="submitToSpreadsheet()" class="w-full bg-orange-600 text-white font-bold py-4 rounded-xl shadow-lg active:scale-95 transition">確認送出訂單</button>
             </div>
         </main>
     </div>
 
     <script>
-        // 【核心網址】對照 image_7657c1.jpg 手動校正，結尾是 IZyIWp0m/exec
-        const scriptURL = 'https://script.google.com/macros/s/AKfycbys5EEI2YgAPL5YXRbqdedZ_ajf1VWU2ACNN861AqE4n6egJ1-A1a1wZBm9IZyIWp0m/exec';
+        // 使用您指定的網址
+        const scriptURL = 'https://script.google.com/macros/s/AKfycby5EEI2YgAPL5YXRbqdedZ_eJf1VWU2ACNn861AqE4n6egJ1-A1a1wZBm9lZyinh_k/exec';
 
         const menuItems = [
             { id: "braised", name: "紅燒牛肉麵", price: 150 },
@@ -94,8 +94,7 @@
             document.getElementById('total-price').innerText = `$${total}`;
         }
 
-        // 修改原本的函數，移除 LINE 跳轉，改為專心傳送試算表
-        async function submitToLine() {
+        async function submitToSpreadsheet() {
             let total = 0;
             let rawItems = [];
             
@@ -108,20 +107,19 @@
             
             if (total === 0) return alert("請先選擇餐點！");
 
-            const isFirstOrder = !currentOrderId;
-            if (isFirstOrder) {
+            if (!currentOrderId) {
                 const now = new Date();
                 const randomPart = Math.floor(Math.random() * 9000 + 1000); 
                 currentOrderId = `${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}-${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}-${randomPart}`;
                 localStorage.setItem('orderId', currentOrderId);
             }
 
-            const submitBtn = document.getElementById('submit-btn');
-            submitBtn.innerText = "⚡ 正在傳送至櫃檯...";
-            submitBtn.disabled = true;
+            const btn = document.getElementById('submit-btn');
+            btn.innerText = "⚡ 正在送出訂單...";
+            btn.disabled = true;
 
             try {
-                // 【核心動作】發送到 Apps Script 第 10 版大腦
+                // 發送到您指定的網址
                 await fetch(scriptURL, {
                     method: 'POST',
                     mode: 'no-cors',
@@ -132,15 +130,15 @@
                     })
                 });
                 
-                alert("✅ 訂單已送出！請確認試算表最上方。");
+                alert("✅ 訂單已成功送出！請稍候為您服務。");
                 showOrderState(currentOrderId);
-                prepareForNext(); // 清空購物車，方便下位顧客
-                submitBtn.innerText = "確認送出訂單";
-                submitBtn.disabled = false;
+                prepareForNext();
+                btn.innerText = "確認送出訂單";
+                btn.disabled = false;
             } catch (e) {
-                alert("❌ 傳送失敗，請檢查網路！");
-                submitBtn.innerText = "確認送出訂單";
-                submitBtn.disabled = false;
+                alert("❌ 網路異常，請確認連線！");
+                btn.disabled = false;
+                btn.innerText = "確認送出訂單";
             }
         }
 
