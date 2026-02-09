@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>點易 OrderEase - 商用正式版</title>
+    <title>點易 OrderEase - 雲端接單版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet" />
     <style>
@@ -16,8 +16,8 @@
 <body class="antialiased">
 
     <div id="sticky-order-bar">
-        您的單號：<span id="header-num" style="color: #ff6d00;"></span>
-        <button onclick="clearAllData()" class="ml-4 text-xs bg-red-700 text-white px-2 py-1 rounded">新顧客/結帳</button>
+        單號：<span id="header-num" style="color: #ff6d00;"></span>
+        <button onclick="clearAllData()" class="ml-4 text-xs bg-red-700 text-white px-2 py-1 rounded shadow">新顧客/結帳</button>
     </div>
 
     <div class="max-w-md mx-auto px-4 py-6">
@@ -43,12 +43,14 @@
                     <span class="font-bold text-gray-600">總金額</span>
                     <span id="total-price" class="text-2xl font-bold text-orange-600">$0</span>
                 </div>
-                <button onclick="submitToLine()" class="w-full bg-orange-600 text-white font-bold py-4 rounded-xl shadow-lg active:scale-95 transition">確認送出訂單</button>
+                <button id="submit-btn" onclick="submitOrder()" class="w-full bg-orange-600 text-white font-bold py-4 rounded-xl shadow-lg active:scale-95 transition">確認送出訂單</button>
             </div>
         </main>
     </div>
 
     <script>
+        // --- 核心設定區 ---
+        const scriptURL = "https://script.google.com/macros/s/AKfycbwUWfNLoHzGI0vjTKSBUMseG2_fBEBkwgFy8NJmBTkCwtqEC0luGs2fJ8ecgReDMTA/exec";
         const menuItems = [
             { id: "braised", name: "紅燒牛肉麵", price: 150 },
             { id: "clear", name: "清燉牛肉麵", price: 150 },
@@ -91,27 +93,38 @@
             document.getElementById('total-price').innerText = `$${total}`;
         }
 
-        function submitToLine() {
+        function submitOrder() {
             let total = 0, itemsText = "";
-            menuItems.forEach(item => { if(cart[item.id] > 0) { itemsText += `・${item.name} x${cart[item.id]}\n`; total += cart[item.id]*item.price; } });
+            menuItems.forEach(item => { if(cart[item.id] > 0) { itemsText += `${item.name} x${cart[item.id]} `; total += cart[item.id]*item.price; } });
             if (total === 0) return alert("請先選擇餐點！");
 
-            const isFirstOrder = !currentOrderId;
-            if (isFirstOrder) {
+            if (!currentOrderId) {
                 const now = new Date();
                 const randomPart = Math.floor(Math.random() * 9000 + 1000); 
                 currentOrderId = `${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}-${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}-${randomPart}`;
                 localStorage.setItem('orderId', currentOrderId);
             }
-            
-            const title = isFirstOrder ? "【取餐單號" : "【加點單號";
-            const msg = `${title}：${currentOrderId}】\n\n項目：\n${itemsText}\n總金額：${total} 元`;
-            
-            showOrderState(currentOrderId);
-            // 送出後自動清空購物車，為下一次加點做準備
-            prepareForNext();
-            
-            setTimeout(() => { window.location.href = `https://line.me/R/msg/text/?${encodeURIComponent(msg)}`; }, 100);
+
+            const btn = document.getElementById('submit-btn');
+            btn.innerText = "訂單傳送中...";
+            btn.disabled = true;
+
+            fetch(scriptURL, {
+                method: 'POST',
+                mode: 'no-cors',
+                body: JSON.stringify({ orderId: currentOrderId, items: itemsText, total: total })
+            })
+            .then(() => {
+                alert("訂單已傳送成功！單號：#" + currentOrderId);
+                showOrderState(currentOrderId);
+                prepareForNext();
+                btn.innerText = "確認送出訂單";
+                btn.disabled = false;
+            })
+            .catch(() => {
+                alert("傳送失敗，請檢查網路。");
+                btn.disabled = false;
+            });
         }
 
         function showOrderState(id) {
@@ -126,10 +139,7 @@
         }
 
         function clearAllData() {
-            if(confirm("確定要結帳並清除單號嗎？")) {
-                localStorage.removeItem('orderId');
-                location.reload();
-            }
+            if(confirm("確定要結帳並清除單號嗎？")) { localStorage.removeItem('orderId'); location.reload(); }
         }
     </script>
 </body>

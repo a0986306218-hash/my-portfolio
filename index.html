@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>OrderEase - Pro System</title>
+    <title>OrderEase - Cloud Order System</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet" />
     <style>
         :root { --primary-blue: #1a237e; --primary-orange: #ff6d00; }
         body { font-family: "Noto Sans TC", sans-serif; background: linear-gradient(135deg, #4a3528 0%, #2d1f18 100%); min-height: 100vh; padding-bottom: 50px; }
         #sticky-order-bar { position: fixed; top: 0; width: 100%; background: rgba(45, 31, 24, 0.95); color: #f5e6d3; text-align: center; padding: 12px; font-weight: bold; z-index: 9999; border-bottom: 2px solid #ff6d00; display: none; }
-        .menu-card { background: rgba(245, 230, 211, 0.98); border: 1px solid #c4a574; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .menu-card { background: rgba(245, 230, 211, 0.98); border: 1px solid #c4a574; border-radius: 15px; }
     </style>
 </head>
 <body class="antialiased">
@@ -43,12 +43,13 @@
                     <span class="font-bold text-gray-600">Total</span>
                     <span id="total-price" class="text-2xl font-bold text-orange-600">$0</span>
                 </div>
-                <button onclick="submitToLine()" class="w-full bg-orange-600 text-white font-bold py-4 rounded-xl shadow-lg active:scale-95 transition">Confirm Order</button>
+                <button id="submit-btn" onclick="submitOrder()" class="w-full bg-orange-600 text-white font-bold py-4 rounded-xl shadow-lg active:scale-95 transition">Confirm Order</button>
             </div>
         </main>
     </div>
 
     <script>
+        const scriptURL = "https://script.google.com/macros/s/AKfycbwUWfNLoHzGI0vjTKSBUMseG2_fBEBkwgFy8NJmBTkCwtqEC0luGs2fJ8ecgReDMTA/exec";
         const menuItems = [
             { id: "braised", name: "Braised Beef Noodles", price: 150 },
             { id: "clear", name: "Clear Broth Beef Noodles", price: 150 },
@@ -71,16 +72,7 @@
             container.innerHTML = '';
             menuItems.forEach(item => {
                 cart[item.id] = 0;
-                container.innerHTML += `
-                    <div class="flex items-center justify-between p-2 border-b border-gray-100">
-                        <div><b>${item.name}</b><br><span class="text-orange-600 font-bold">$${item.price}</span></div>
-                        <div class="flex items-center gap-3">
-                            <button onclick="updateQty('${item.id}', -1)" class="w-8 h-8 rounded-full border border-blue-800 text-blue-800 font-bold">-</button>
-                            <span id="qty-${item.id}" class="font-bold w-4 text-center">0</span>
-                            <button onclick="updateQty('${item.id}', 1)" class="w-8 h-8 rounded-full border border-blue-800 text-blue-800 font-bold">+</button>
-                        </div>
-                    </div>
-                `;
+                container.innerHTML += `<div class="flex items-center justify-between p-2"><div><b>${item.name}</b><br><span class="text-orange-600 font-bold">$${item.price}</span></div><div class="flex items-center gap-3"><button onclick="updateQty('${item.id}', -1)" class="w-8 h-8 rounded-full border border-blue-800 text-blue-800">-</button><span id="qty-${item.id}">0</span><button onclick="updateQty('${item.id}', 1)" class="w-8 h-8 rounded-full border border-blue-800 text-blue-800">+</button></div></div>`;
             });
         }
 
@@ -91,26 +83,38 @@
             document.getElementById('total-price').innerText = `$${total}`;
         }
 
-        function submitToLine() {
+        function submitOrder() {
             let total = 0, itemsText = "";
-            menuItems.forEach(item => { if(cart[item.id] > 0) { itemsText += `・${item.name} x${cart[item.id]}\n`; total += cart[item.id]*item.price; } });
+            menuItems.forEach(item => { if(cart[item.id] > 0) { itemsText += `${item.name} x${cart[item.id]} `; total += cart[item.id]*item.price; } });
             if (total === 0) return alert("Please select items!");
 
-            const isFirstOrder = !currentOrderId;
-            if (isFirstOrder) {
+            if (!currentOrderId) {
                 const now = new Date();
                 const randomPart = Math.floor(Math.random() * 9000 + 1000); 
                 currentOrderId = `${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}-${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}-${randomPart}`;
                 localStorage.setItem('orderId', currentOrderId);
             }
-            
-            const title = isFirstOrder ? "【Pickup No" : "【Add-on No";
-            const msg = `${title}: ${currentOrderId}】\n\nItems:\n${itemsText}\nTotal: $${total}`;
-            
-            showOrderState(currentOrderId);
-            prepareForNext();
-            
-            setTimeout(() => { window.location.href = `https://line.me/R/msg/text/?${encodeURIComponent(msg)}`; }, 100);
+
+            const btn = document.getElementById('submit-btn');
+            btn.innerText = "Sending...";
+            btn.disabled = true;
+
+            fetch(scriptURL, {
+                method: 'POST',
+                mode: 'no-cors',
+                body: JSON.stringify({ orderId: currentOrderId, items: itemsText, total: total })
+            })
+            .then(() => {
+                alert("Order Sent! No: #" + currentOrderId);
+                showOrderState(currentOrderId);
+                prepareForNext();
+                btn.innerText = "Confirm Order";
+                btn.disabled = false;
+            })
+            .catch(() => {
+                alert("Error sending order.");
+                btn.disabled = false;
+            });
         }
 
         function showOrderState(id) {
@@ -125,10 +129,7 @@
         }
 
         function clearAllData() {
-            if(confirm("Start new order and clear ID?")) {
-                localStorage.removeItem('orderId');
-                location.reload();
-            }
+            if(confirm("Checkout and clear ID?")) { localStorage.removeItem('orderId'); location.reload(); }
         }
     </script>
 </body>
