@@ -8,7 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet" />
     <style>
         :root { --primary-blue: #1a237e; --primary-orange: #ff6d00; }
-        /* 100% 複刻你提供的牛肉麵版深棕色漸層背景 */
+        /* 100% 複刻你牛肉麵版的經典深棕色背景 */
         body { font-family: "Noto Sans TC", sans-serif; background: linear-gradient(135deg, #4a3528 0%, #2d1f18 100%); min-height: 100vh; padding-bottom: 50px; }
         #sticky-order-bar { position: fixed; top: 0; width: 100%; background: rgba(45, 31, 24, 0.95); color: #f5e6d3; text-align: center; padding: 12px; font-weight: bold; z-index: 9999; border-bottom: 2px solid #ff6d00; display: none; }
         .menu-card { background: rgba(245, 230, 211, 0.98); border: 1px solid #c4a574; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
@@ -31,7 +31,6 @@
                 <div class="font-bold text-2xl"><span style="color: var(--primary-blue);">OrderEase</span><span style="color: var(--primary-orange);">點易</span></div>
             </div>
             <p class="text-gray-500 text-xs mb-4">讓點餐變得更容易</p>
-            
             <div class="inline-flex bg-gray-100 rounded-full p-1 text-xs">
                 <button class="px-4 py-2 rounded-full text-gray-500">English</button>
                 <button class="px-4 py-2 rounded-full bg-blue-700 text-white">中文</button>
@@ -41,7 +40,7 @@
         <main class="menu-card p-4 space-y-4">
             <div class="bg-white/50 p-3 rounded-xl border border-orange-200">
                 <label class="block text-sm font-bold text-brown-800 mb-2">📍 請輸入桌號：</label>
-                <input type="text" id="table-number" placeholder="例如：A1 或 5 號" class="w-full p-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                <input type="text" id="table-number" placeholder="例如：5 號" class="w-full p-2 rounded-lg border border-gray-300 focus:outline-none">
             </div>
 
             <h2 class="text-center font-bold text-gray-700 border-b pb-2">炸物清單</h2>
@@ -58,10 +57,9 @@
     </div>
 
     <script>
-        // 使用您指定的鹹酥雞後台網址
-        const scriptURL = 'https://script.google.com/macros/s/AKfycby5EEI2YgAPL5YXRbqdedZ_eJf1VWU2ACNn861AqE4n6egJ1-A1a1wZBm9lZyinh_k/exec';
+        // 已修正網址，移除了多出的 /exec
+        const scriptURL = 'https://script.google.com/macros/s/AKfycbx4_Q--hhZdMO0qqGcN91juSZMyhoqw_X6MIcfLrkFCcsyk2j1Gdgzf4cmMuZMEkG4U/exec';
 
-        // 品項更換為鹹酥雞
         const menuItems = [
             { id: "crispy", name: "招牌鹹酥雞", price: 60 },
             { id: "squid", name: "酥炸魷魚", price: 60 },
@@ -130,7 +128,6 @@
             btn.disabled = true;
 
             try {
-                // 傳送桌號與餐點資料到試算表
                 await fetch(scriptURL, {
                     method: 'POST',
                     mode: 'no-cors',
@@ -142,13 +139,13 @@
                     })
                 });
                 
-                alert("✅ 訂單已送出！請稍候為您服務。");
+                alert("✅ 訂單已送出！請稍候。");
                 showOrderState(currentOrderId);
                 prepareForNext();
                 btn.innerText = "確認送出訂單";
                 btn.disabled = false;
             } catch (e) {
-                alert("❌ 網路異常，請確認連線！");
+                alert("❌ 網路異常！");
                 btn.disabled = false;
                 btn.innerText = "確認送出訂單";
             }
@@ -166,7 +163,7 @@
         }
 
         function clearAllData() {
-            if(confirm("確定要清除單號並重新點餐嗎？")) {
+            if(confirm("確定要結帳並清除單號嗎？")) {
                 localStorage.removeItem('orderId');
                 location.reload();
             }
