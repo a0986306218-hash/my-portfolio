@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>點易 - 鹹酥雞樣板機</title>
+    <style>
+        body { font-family: sans-serif; background-color: #3e2723; color: #fff; margin: 0; padding: 15px; }
+        .card { background: #fff; color: #333; border-radius: 15px; padding: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        h1 { color: #d84315; text-align: center; margin-top: 0; }
+        .menu-item { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding: 12px 0; }
+        .add-btn { background: #d84315; color: white; border: none; padding: 8px 18px; border-radius: 20px; font-weight: bold; cursor: pointer; }
+        
+        /* 桌號區塊 */
+        .table-section { background: #fff3e0; padding: 15px; border-radius: 10px; margin: 20px 0; border: 1px solid #ffb74d; }
+        .table-input { width: 100%; padding: 12px; font-size: 18px; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; }
+
+        /* 彈出選單 (Modal) */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 100; }
+        .modal-content { background: #fff; color: #333; width: 85%; max-width: 400px; margin: 25% auto; padding: 25px; border-radius: 15px; }
+        .option-group { margin: 15px 0; }
+        .option-btn { display: inline-block; background: #eee; padding: 10px 15px; margin: 5px; border-radius: 20px; cursor: pointer; font-size: 14px; }
+        .option-btn.active { background: #d84315; color: #fff; }
+
+        .submit-btn { background: #d84315; color: #fff; width: 100%; padding: 15px; border: none; border-radius: 10px; font-size: 20px; font-weight: bold; margin-top: 20px; cursor: pointer; }
+        .submit-btn:disabled { background: #ccc; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h1>🔥 阿豪鹹酥雞 🔥</h1>
+    
+    <div class="table-section">
+        <label style="color: #d84315; font-weight: bold; display: block; margin-bottom: 8px;">📍 請輸入桌號或取餐稱呼：</label>
+        <input type="text" id="tableNum" class="table-input" placeholder="例如：3 號桌 或 陳先生">
+    </div>
+
+    <div id="menu">
+        </div>
+
+    <div style="margin-top:20px; border-top: 2px solid #eee; padding-top:15px;">
+        <h3 style="margin-bottom:10px;">已選餐點：</h3>
+        <div id="cartDisplay" style="color: #666; font-size: 15px; line-height: 1.6;"></div>
+        <h2 style="text-align: right; color: #d84315; margin-top: 15px;">總計：$<span id="totalPrice">0</span></h2>
+    </div>
+
+    <button class="submit-btn" id="sendBtn" onclick="sendOrder()">確認送出訂單</button>
+</div>
+
+<div id="optionModal" class="modal">
+    <div class="modal-content">
+        <h3 id="modalTitle" style="margin-top:0; color:#d84315;">客製化需求</h3>
+        <div class="option-group">
+            <strong>選擇辣度：</strong><br>
+            <div id="spicyOptions">
+                <span class="option-btn active" onclick="setSpicy('不辣', this)">不辣</span>
+                <span class="option-btn" onclick="setSpicy('小辣', this)">小辣</span>
+                <span class="option-btn" onclick="setSpicy('中辣', this)">中辣</span>
+                <span class="option-btn" onclick="setSpicy('大辣', this)">大辣</span>
+            </div>
+        </div>
+        <div class="option-group">
+            <strong>加購配料 (可多選)：</strong><br>
+            <div id="toppingOptions">
+                <span class="option-btn" onclick="toggleTopping('加蒜', this)">加蒜</span>
+                <span class="option-btn" onclick="toggleTopping('加九層塔', this)">加九層塔</span>
+            </div>
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <button class="submit-btn" style="background:#888;" onclick="closeModal()">取消</button>
+            <button class="submit-btn" onclick="confirmItem()">加入清單</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 自動帶入你提供的網址
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbx4_Q--hhZdMO0qqGcN91juSZMyhoqw_X6MIcfLrkFCcsyk2j1Gdgzf4cmMuZMEkG4U/exec';
+    
+    const menu = [
+        { name: '招牌鹹酥雞', price: 60 }, 
+        { name: '酥炸魷魚', price: 60 }, 
+        { name: '手工甜不辣', price: 30 },
+        { name: '四季豆', price: 40 },
+        { name: '米血糕', price: 25 }
+    ];
+
+    let cart = [];
+    let currentItem = null;
+    let currentSpicy = '不辣';
+    let currentToppings = [];
+
+    // 產生菜單
+    const menuDiv = document.getElementById('menu');
+    menu.forEach(item => {
+        menuDiv.innerHTML += `
+            <div class="menu-item">
+                <span><strong>${item.name}</strong> - $${item.price}</span>
+                <button class="add-btn" onclick="openOptions('${item.name}', ${item.price})">加入</button>
+            </div>`;
+    });
+
+    function openOptions(name, price) {
+        currentItem = { name, price };
+        currentSpicy = '不辣';
+        currentToppings = [];
+        // 重置按鈕狀態
+        document.querySelectorAll('.option-btn').forEach(b => b.classList.remove('active'));
+        document.querySelector('#spicyOptions .option-btn').classList.add('active');
+        document.getElementById('modalTitle').innerText = '客製化：' + name;
+        document.getElementById('optionModal').style.display = 'block';
+    }
+
+    function closeModal() { document.getElementById('optionModal').style.display = 'none'; }
+
+    function setSpicy(val, el) {
+        currentSpicy = val;
+        document.querySelectorAll('#spicyOptions .option-btn').forEach(b => b.classList.remove('active'));
+        el.classList.add('active');
+    }
+
+    function toggleTopping(val, el) {
+        if (currentToppings.includes(val)) {
+            currentToppings = currentToppings.filter(t => t !== val);
+            el.classList.remove('active');
+        } else {
+            currentToppings.push(val);
+            el.classList.add('active');
+        }
+    }
+
+    function confirmItem() {
+        const toppingText = currentToppings.length > 0 ? `/ ${currentToppings.join(',')}` : '';
+        const fullInfo = `${currentItem.name} (${currentSpicy}${toppingText})`;
+        cart.push({ name: fullInfo, price: currentItem.price });
+        updateCart();
+        closeModal();
+    }
+
+    function updateCart() {
+        const cartDiv = document.getElementById('cartDisplay');
+        const totalSpan = document.getElementById('totalPrice');
+        cartDiv.innerHTML = cart.map((i, index) => `
+            <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                <span>${i.name}</span>
+                <span>$${i.price} <small style="cursor:pointer; color:red;" onclick="removeItem(${index})">✕</small></span>
+            </div>`).join('');
+        totalSpan.innerText = cart.reduce((sum, i) => sum + i.price, 0);
+    }
+
+    function removeItem(idx) { cart.splice(idx, 1); updateCart(); }
+
+    function sendOrder() {
+        const table = document.getElementById('tableNum').value;
+        const sendBtn = document.getElementById('sendBtn');
+        if (!table) return alert('請輸入桌號或稱呼，方便老闆送餐喔！');
+        if (cart.length === 0) return alert('清單還是空的喔！');
+
+        sendBtn.disabled = true;
+        sendBtn.innerText = '訂單傳送中...';
+
+        const orderData = {
+            tableNumber: table,
+            items: cart.map(i => i.name).join('\n'),
+            total: document.getElementById('totalPrice').innerText
+        };
+
+        fetch(scriptURL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(orderData) })
+            .then(() => {
+                alert('✅ 訂單送出成功！請留意老闆叫號。');
+                cart = []; updateCart();
+                document.getElementById('tableNum').value = '';
+                sendBtn.disabled = false;
+                sendBtn.innerText = '確認送出訂單';
+            })
+            .catch(() => {
+                alert('❌ 傳送失敗，請檢查網路。');
+                sendBtn.disabled = false;
+            });
+    }
+</script>
+</body>
+</html>
