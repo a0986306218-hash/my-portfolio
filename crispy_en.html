@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OrderEase - English Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet" />
+    <style>
+        :root { --primary-blue: #1a237e; --primary-orange: #ff6d00; }
+        body { font-family: "Noto Sans TC", sans-serif; background: linear-gradient(135deg, #4a3528 0%, #2d1f18 100%); min-height: 100vh; padding-bottom: 50px; }
+        #sticky-order-bar { position: fixed; top: 0; width: 100%; background: rgba(45, 31, 24, 0.95); color: #f5e6d3; text-align: center; padding: 12px; font-weight: bold; z-index: 9999; border-bottom: 2px solid #ff6d00; display: none; }
+        .menu-card { background: rgba(245, 230, 211, 0.98); border: 1px solid #c4a574; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .opt-btn { font-size: 12px; padding: 4px 10px; border-radius: 20px; border: 1px solid #c4a574; color: #5d4037; }
+        .opt-btn.active { background: #ff6d00; color: white; border-color: #ff6d00; }
+    </style>
+</head>
+<body class="antialiased">
+    <div id="sticky-order-bar">Order ID: <span id="header-num" style="color: #ff6d00;"></span><button onclick="clearAllData()" class="ml-4 text-xs bg-red-700 text-white px-2 py-1 rounded">New Order</button></div>
+    
+    <div class="max-w-md mx-auto px-4 py-6">
+        <header class="bg-white rounded-2xl p-6 mb-6 text-center shadow-lg">
+            <div class="flex items-center justify-center gap-3 mb-4">
+                <div style="background: var(--primary-blue); width:35px; height:35px; border-radius:8px; display:flex; align-items:center; justify-content:center; position:relative;"><span style="color:#fff; font-size:20px;">✔</span><div style="position:absolute; top:-2px; right:-2px; background:var(--primary-orange); width:12px; height:12px; border-radius:50%; border:2px solid #fff;"></div></div>
+                <div class="font-bold text-2xl"><span style="color: var(--primary-blue);">Order</span><span style="color: var(--primary-orange);">Ease</span></div>
+            </div>
+            <div class="inline-flex bg-gray-100 rounded-full p-1 text-xs">
+                <button class="px-4 py-2 rounded-full bg-blue-700 text-white">English</button>
+                <button onclick="location.href='crispy.html'" class="px-4 py-2 rounded-full text-gray-500">中文</button>
+            </div>
+        </header>
+
+        <main class="menu-card p-4 space-y-4">
+            <div class="bg-white/50 p-3 rounded-xl border border-orange-200">
+                <label class="block text-sm font-bold text-brown-800 mb-1">📍 Table No. (Leave blank for Takeout):</label>
+                <input type="text" id="table-number" placeholder="e.g., A1" class="w-full p-2 rounded-lg border border-gray-300 focus:outline-none">
+            </div>
+
+            <div class="bg-white/50 p-3 rounded-xl border border-blue-200 space-y-2">
+                <div class="flex items-center gap-2 flex-wrap"><span class="text-xs font-bold text-blue-900">Spicy:</span><button class="opt-btn active" onclick="setSpicy('None', this)">None</button><button class="opt-btn" onclick="setSpicy('Mild', this)">Mild</button><button class="opt-btn" onclick="setSpicy('Med', this)">Med</button><button class="opt-btn" onclick="setSpicy('Hot', this)">Hot</button></div>
+                <div class="flex items-center gap-2"><span class="text-xs font-bold text-blue-900">Add-ons:</span><button class="opt-btn" onclick="toggleOption('Garlic', this)">+ Garlic</button><button class="opt-btn" onclick="toggleOption('Basil', this)">+ Basil</button></div>
+            </div>
+
+            <div id="menu-container" class="space-y-3"></div>
+            <div class="border-t-2 border-gray-200 pt-4 mt-6"><div class="flex justify-between items-center mb-4"><span class="font-bold text-gray-600">Total</span><span id="total-price" class="text-2xl font-bold text-orange-600">$0</span></div><button id="submit-btn" onclick="submitToSpreadsheet()" class="w-full bg-orange-600 text-white font-bold py-4 rounded-xl shadow-lg active:scale-95 transition">Submit Order</button></div>
+        </main>
+    </div>
+
+    <script>
+        const scriptURL = 'https://script.google.com/macros/s/AKfycbx4_Q--hhZdMO0qqGcN91juSZMyhoqw_X6MIcfLrkFCcsyk2j1Gdgzf4cmMuZMEkG4U/exec';
+        
+        // 品項映射：前端顯示英文，內容對應中文
+        const menuItems = [
+            {id:"c", name:"Crispy Chicken", cnName:"招牌鹹酥雞", price:60},
+            {id:"s", name:"Fried Squid", cnName:"酥炸魷魚", price:60},
+            {id:"t", name:"Tempura", cnName:"手工甜不辣", price:30},
+            {id:"b", name:"Green Beans", cnName:"四季豆", price:40},
+            {id:"m", name:"Blood Cake", cnName:"米血糕", price:25}
+        ];
+
+        // 辣度與配料翻譯映射
+        const spicyMap = { "None": "不辣", "Mild": "小辣", "Med": "中辣", "Hot": "大辣" };
+        const toppingMap = { "Garlic": "加蒜頭", "Basil": "加九層塔" };
+        
+        let cart = {}; let currentSpicy = "None"; let extraOptions = []; let currentOrderId = localStorage.getItem('orderId') || null;
+
+        window.onload = function() { renderMenu(); if (currentOrderId) showOrderState(currentOrderId); };
+        function setSpicy(v, e) { currentSpicy = v; e.parentNode.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('active')); e.classList.add('active'); }
+        function toggleOption(v, e) { if(extraOptions.includes(v)) extraOptions = extraOptions.filter(x => x !== v); else extraOptions.push(v); e.classList.toggle('active'); }
+        
+        function renderMenu() {
+            const container = document.getElementById('menu-container');
+            menuItems.forEach(item => { cart[item.id] = 0; container.innerHTML += `<div class="flex items-center justify-between p-2 border-b border-gray-100"><div><b class="text-slate-800">${item.name}</b><br><span class="text-orange-600 font-bold">$${item.price}</span></div><div class="flex items-center gap-3"><button onclick="updateQty('${item.id}', -1)" class="w-8 h-8 rounded-full border border-blue-800 text-blue-800 font-bold">-</button><span id="qty-${item.id}" class="font-bold w-4 text-center">0</span><button onclick="updateQty('${item.id}', 1)" class="w-8 h-8 rounded-full border border-blue-800 text-blue-800 font-bold">+</button></div></div>`; });
+        }
+
+        function updateQty(id, c) { cart[id] = Math.max(0, cart[id] + c); document.getElementById(`qty-${id}`).innerText = cart[id]; let total = 0; menuItems.forEach(item => total += cart[item.id] * item.price); document.getElementById('total-price').innerText = `$${total}`; }
+
+        async function submitToSpreadsheet() {
+            const tableInput = document.getElementById('table-number').value.trim();
+            const finalTable = tableInput === "" ? "外帶" : tableInput; // 統一傳送中文「外帶」
+            
+            let rawItems = []; let total = 0;
+            menuItems.forEach(item => {
+                if(cart[item.id] > 0) {
+                    rawItems.push(`${item.cnName} x${cart[item.id]}`); // 使用 cnName 傳送中文品項
+                    total += cart[item.id] * item.price;
+                }
+            });
+            
+            if (total === 0) return alert("Select items first!");
+
+            // 自動翻譯為中文後傳給老闆
+            const finalSpicy = spicyMap[currentSpicy];
+            const finalToppings = extraOptions.map(opt => toppingMap[opt]).join(',') || '無';
+            const finalItems = `辣度：${finalSpicy}\n配料：${finalToppings}\n---\n${rawItems.join('\n')}`;
+
+            if (!currentOrderId) { const now = new Date(); const randomPart = Math.floor(Math.random() * 9000 + 1000); currentOrderId = `${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}-${randomPart}`; localStorage.setItem('orderId', currentOrderId); }
+            const btn = document.getElementById('submit-btn'); btn.innerText = "Sending..."; btn.disabled = true;
+            try { await fetch(scriptURL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ orderId: currentOrderId, tableNumber: finalTable, items: finalItems, total: total }) }); alert("✅ Order Success! ID: " + currentOrderId); showOrderState(currentOrderId); prepareForNext(); btn.innerText = "Submit Order"; btn.disabled = false; } catch (e) { alert("❌ Error!"); btn.disabled = false; }
+        }
+        function showOrderState(id) { document.getElementById('header-num').innerText = id; document.getElementById('sticky-order-bar').style.display = 'block'; document.body.style.paddingTop = '60px'; }
+        function prepareForNext() { menuItems.forEach(item => { cart[item.id] = 0; document.getElementById(`qty-${item.id}`).innerText = "0"; }); document.getElementById('total-price').innerText = "$0"; }
+        function clearAllData() { if(confirm("Checkout and clear?")) { localStorage.removeItem('orderId'); location.reload(); } }
+    </script>
+</body>
+</html>
