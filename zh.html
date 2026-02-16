@@ -27,35 +27,53 @@
         <main class="menu-card p-6">
             <div class="bg-white/80 p-4 rounded-xl border-2 border-orange-200 mb-6 shadow-inner text-center">
                 <label class="block text-sm font-bold text-orange-900 mb-2">📍 桌號 (內用請填寫，外帶請留空)：</label>
-                <input type="text" id="table-number" placeholder="例如：A1" class="w-full p-2 rounded-lg border-2 border-gray-200 focus:border-orange-500 focus:outline-none text-center text-lg font-bold">
+                <input type="text" id="table-number" placeholder="例如：A1" class="w-full p-3 rounded-lg border-2 border-gray-200 focus:border-orange-500 focus:outline-none text-center text-lg font-bold">
             </div>
+
+            <h3 class="text-center font-bold text-brown-800 mb-4 border-b border-orange-200 pb-2">精選主食</h3>
             <div id="menu-container" class="space-y-4"></div>
+            
             <div class="border-t-2 border-orange-200 pt-6 mt-8 text-center">
-                <div class="flex justify-between items-center mb-6 px-4"><span class="font-bold text-gray-600">總金額</span><span id="total-price" class="text-3xl font-bold text-orange-600">$0</span></div>
+                <div class="flex justify-between items-center mb-6 px-4">
+                    <span class="font-bold text-gray-600">總金額</span>
+                    <span id="total-price" class="text-3xl font-bold text-orange-600">$0</span>
+                </div>
                 <button id="submit-btn" onclick="submitToSpreadsheet()" class="w-full bg-orange-600 text-white font-bold py-5 rounded-2xl shadow-xl active:scale-95 transition text-xl">確認送出訂單</button>
             </div>
         </main>
     </div>
 
     <script>
+        // 使用正確連線網址
         const scriptURL = 'https://script.google.com/macros/s/AKfycby5EEI2YgAPL5YXRbqdedZ_eJf1VWU2ACNn861AqE4n6egJ1-A1a1wZBm9lZyinh_k/exec'; 
-        const menuItems = [{id:"n1", zh:"紅燒牛肉麵", price:150},{id:"n2", zh:"清燉牛肉麵", price:150},{id:"n3", zh:"牛肉湯餃", price:120},{id:"s1", zh:"滷味拼盤", price:60},{id:"s2", zh:"酸辣湯", price:40},{id:"s3", zh:"滷蛋 (顆)", price:15}];
+        
+        // 品項清單：完整 6 項
+        const menuItems = [
+            {id:"n1", zh:"紅燒牛肉麵", price:150},
+            {id:"n2", zh:"清燉牛肉麵", price:150},
+            {id:"n3", zh:"牛肉湯餃", price:120},
+            {id:"s1", zh:"滷味拼盤", price:60},
+            {id:"s2", zh:"酸辣湯", price:40},
+            {id:"s3", zh:"滷蛋 (顆)", price:15}
+        ];
         
         let cart = {};
         window.onload = function() { renderMenu(); };
 
         function renderMenu() {
-            const container = document.getElementById('menu-container'); container.innerHTML = "";
+            const container = document.getElementById('menu-container'); 
+            container.innerHTML = "";
             menuItems.forEach(item => {
-                cart[item.id] = 0;
-                container.innerHTML += `<div class="flex items-center justify-between p-2"><div><b class="text-slate-800 text-lg">${item.zh}</b><br><span class="text-orange-600 font-bold">$${item.price}</span></div><div class="flex items-center gap-4"><button onclick="updateQty('${item.id}', -1)" class="w-10 h-10 rounded-full border-2 border-blue-800 text-blue-800 font-bold text-xl">-</button><span id="qty-${item.id}" class="font-bold text-xl w-6 text-center">0</span><button onclick="updateQty('${item.id}', 1)" class="w-10 h-10 rounded-full border-2 border-blue-800 text-blue-800 font-bold text-xl">+</button></div></div>`;
+                if (!cart[item.id]) cart[item.id] = 0;
+                container.innerHTML += `<div class="flex items-center justify-between p-2"><div><b class="text-slate-800 text-lg">${item.zh}</b><br><span class="text-orange-600 font-bold">$${item.price}</span></div><div class="flex items-center gap-4"><button onclick="updateQty('${item.id}', -1)" class="w-10 h-10 rounded-full border-2 border-blue-800 text-blue-800 font-bold text-xl">-</button><span id="qty-${item.id}" class="font-bold text-xl w-6 text-center">${cart[item.id]}</span><button onclick="updateQty('${item.id}', 1)" class="w-10 h-10 rounded-full border-2 border-blue-800 text-blue-800 font-bold text-xl">+</button></div></div>`;
             });
         }
 
         function updateQty(id, change) {
             cart[id] = Math.max(0, cart[id] + change);
             document.getElementById(`qty-${id}`).innerText = cart[id];
-            let total = 0; menuItems.forEach(item => total += (cart[item.id]||0) * item.price);
+            let total = 0; 
+            menuItems.forEach(item => total += (cart[item.id]||0) * item.price);
             document.getElementById('total-price').innerText = `$${total}`;
         }
 
@@ -67,19 +85,28 @@
             const btn = document.getElementById('submit-btn'); btn.innerText = "⚡ 傳送中..."; btn.disabled = true;
 
             try {
-                const response = await fetch(scriptURL, { method: 'POST', body: JSON.stringify({ tableNumber: tableNum, items: rawItems.join('\n'), total: total }) });
+                const response = await fetch(scriptURL, {
+                    method: 'POST',
+                    body: JSON.stringify({ tableNumber: tableNum, items: rawItems.join('\n'), total: total })
+                });
                 const result = await response.json();
                 if (result.orderId) {
                     document.getElementById('header-num').innerText = result.orderId;
-                    alert("✅ 訂單成功！單號：" + result.orderId);
+                    alert("✅ 訂單成功！您的單號是：" + result.orderId);
                     
-                    // --- 成功後立即清空 (解決續點消失/舊單號殘留問題) ---
-                    menuItems.forEach(item => { cart[item.id] = 0; document.getElementById(`qty-${item.id}`).innerText = "0"; });
+                    // 下單成功後的重置動作：歸零並重繪選單
+                    menuItems.forEach(item => { cart[item.id] = 0; });
+                    renderMenu(); 
                     document.getElementById('total-price').innerText = "$0";
-                    document.getElementById('table-number').value = ""; // 清空桌號
+                    document.getElementById('table-number').value = ""; 
+
                     setTimeout(() => { document.getElementById('header-num').innerText = "等待下單..."; }, 8000);
                 }
-            } catch (e) { alert("傳送成功(或GAS跳轉)，請檢查試算表。"); } finally { btn.innerText = "確認送出訂單"; btn.disabled = false; }
+            } catch (e) {
+                alert("傳送異常，請稍後檢查試算表。");
+            } finally {
+                btn.innerText = "確認送出訂單"; btn.disabled = false;
+            }
         }
     </script>
 </body>
