@@ -13,45 +13,33 @@
 </head>
 <body class="antialiased">
     <div id="sticky-order-bar">您的單號：<span id="header-num" style="color: #ff6d00;">等待下單...</span></div>
-    
     <div class="max-w-md mx-auto px-4 py-16">
         <header class="bg-white rounded-2xl p-6 mb-6 text-center shadow-lg">
             <div class="font-bold text-2xl"><span style="color: #1a237e;">OrderEase</span><span style="color: #ff6d00;">點易</span></div>
         </header>
-
         <main class="menu-card p-6">
             <div class="bg-white/80 p-4 rounded-xl border-2 border-orange-200 mb-6 shadow-inner text-center">
                 <input type="text" id="table-number" placeholder="📍 桌號 (內用請填寫)" class="w-full p-2 rounded-lg border-2 border-gray-200 focus:border-orange-500 text-center text-lg font-bold">
             </div>
-
             <div id="menu-container" class="space-y-4"></div>
-            
             <div class="border-t-2 border-orange-200 pt-6 mt-8 text-center">
-                <div class="flex justify-between items-center mb-6 px-4">
-                    <span class="font-bold text-gray-600">總金額</span>
-                    <span id="total-price" class="text-3xl font-bold text-orange-600">$0</span>
-                </div>
+                <div class="flex justify-between items-center mb-6 px-4"><span class="font-bold text-gray-600">總金額</span><span id="total-price" class="text-3xl font-bold text-orange-600">$0</span></div>
                 <button id="submit-btn" onclick="submitToSpreadsheet()" class="w-full bg-orange-600 text-white font-bold py-5 rounded-2xl shadow-xl text-xl">確認送出訂單</button>
             </div>
         </main>
     </div>
-
     <script>
-        // ✅ 已使用你提供的正確網址
         const scriptURL = 'https://script.google.com/macros/s/AKfycby5EEI2YgAPL5YXRbqdedZ_eJf1VWU2ACNn861AqE4n6egJ1-A1a1wZBm9lZyinh_k/exec'; 
-        
         const menuItems = [
             {id:"n1", zh:"紅燒牛肉麵", price:150}, {id:"n2", zh:"清燉牛肉麵", price:150},
             {id:"n3", zh:"牛肉湯餃", price:120}, {id:"s1", zh:"滷味拼盤", price:60},
             {id:"s2", zh:"酸辣湯", price:40}, {id:"s3", zh:"滷蛋 (顆)", price:15}
         ];
-        
         let cart = {};
         window.onload = function() { renderMenu(); };
 
         function renderMenu() {
-            const container = document.getElementById('menu-container'); 
-            container.innerHTML = "";
+            const container = document.getElementById('menu-container'); container.innerHTML = "";
             menuItems.forEach(item => {
                 cart[item.id] = 0;
                 container.innerHTML += `<div class="flex items-center justify-between p-2"><div><b class="text-slate-800 text-lg">${item.zh}</b><br><span class="text-orange-600 font-bold">$${item.price}</span></div><div class="flex items-center gap-4"><button onclick="updateQty('${item.id}', -1)" class="w-10 h-10 rounded-full border-2 border-blue-800 text-blue-800 font-bold text-xl">-</button><span id="qty-${item.id}" class="font-bold text-xl w-6 text-center">0</span><button onclick="updateQty('${item.id}', 1)" class="w-10 h-10 rounded-full border-2 border-blue-800 text-blue-800 font-bold text-xl">+</button></div></div>`;
@@ -75,25 +63,17 @@
             try {
                 const response = await fetch(scriptURL, { method: 'POST', body: JSON.stringify({ tableNumber: tableNum, items: rawItems.join('\n'), total: total }) });
                 const result = await response.json();
-                
                 if (result.orderId) {
-                    // 1. 同步單號顯示
                     document.getElementById('header-num').innerText = result.orderId;
                     alert("✅ 訂單成功！您的單號是：" + result.orderId);
                     
-                    // 2. 核心功能：立即清空數量、金額與桌號
+                    // 下單成功立即清空歸零
                     menuItems.forEach(item => { cart[item.id] = 0; document.getElementById(`qty-${item.id}`).innerText = "0"; });
                     document.getElementById('total-price').innerText = "$0";
                     document.getElementById('table-number').value = ""; 
-
-                    // 8 秒後恢復等待狀態
                     setTimeout(() => { document.getElementById('header-num').innerText = "等待下單..."; }, 8000);
                 }
-            } catch (e) { 
-                alert("手機未收到確認，請重新整理網頁再試！"); 
-            } finally { 
-                btn.innerText = "確認送出訂單"; btn.disabled = false; 
-            }
+            } catch (e) { alert("手機未收到回傳單號，請檢查試算表。"); } finally { btn.innerText = "確認送出訂單"; btn.disabled = false; }
         }
     </script>
 </body>
