@@ -127,7 +127,7 @@ function renderMenu(){
   menu.innerHTML="";
   slice.forEach(item=>{
     if(cart[item.id]===undefined) cart[item.id]=0;
-    const name=(lang==="zh")?item.zh:item.en;
+    const name = (lang === "en" && item.en) ? item.en : item.zh;
     menu.innerHTML+=`
       <div class="flex items-center justify-between p-2 border-b border-gray-100">
         <div>
